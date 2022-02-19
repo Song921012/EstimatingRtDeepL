@@ -33,8 +33,7 @@ Then many packages will be downloaded. My project includes many packages one may
 
 - Step 4: Run the codes.
 
-If one are not familiar with Julia, one can see for more details.
-Julia Documents: [Julia Documentation · The Julia Language](https://docs.julialang.org/en/v1/)
+If one are not familiar with Julia, one can see for more details in Julia Documents: [Julia Documentation · The Julia Language](https://docs.julialang.org/en/v1/)
 
 ### Part Two: Comparisons and ensemble methods: EpiEstim, EpiNow2 and Deep Learning
 
