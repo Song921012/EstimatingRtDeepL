@@ -15,6 +15,7 @@ using Random
 Random.seed!(14);
 source_data = DataFrame(CSV.File("./DeepLearningEffectiveReproductionNumber/Source_Data/Provincial_Daily_Totals.csv"))
 data_on = source_data[source_data.Province.=="ONTARIO", :]
+data_on
 n = 30
 m = 149
 data_acc = data_on.TotalCases[(n+1):n+m+1]
@@ -23,6 +24,14 @@ display(plot(data_daily, label = "Daily Confirmed Cases", lw = 2))
 display(plot(data_acc, label = "Accumulated Confirmed Cases", lw = 2))
 data_daily[1]
 println(length(data_acc))
+
+# export data
+data_export = data_on[(n+1):n+m+1, [:SummaryDate, :TotalCases]]
+ontario_data_export = DataFrame()
+ontario_data_export.date = data_export.SummaryDate
+ontario_data_export.case = data_daily
+ontario_data_export.Accase = data_acc
+
 
 # Model generation
 ann = FastChain(FastDense(1, 32, tanh), FastDense(32, 1))
@@ -41,10 +50,6 @@ function train(θ)
         sensealg = InterpolatingAdjoint(autojacvec = ReverseDiffVJP())))
 end
 
-@time res1_node = DiffEqFlux.sciml_train(loss, p_0, ADAM(0.06), cb = callback, maxiters = 1000)
-@time res2_node = DiffEqFlux.sciml_train(loss, res1_node.minimizer, BFGS(initial_stepnorm = 0.01), cb = callback, maxiters = 300)
-ann_param = res2_node.minimizer
-
 
 using BSON: @load
 @load "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_para_irbfgs100.bason" ann_param
@@ -61,3 +66,12 @@ tspan = collect(0:1:149)'
 ann_value = abs.(ann(tspan, p_min))'
 plot(ann_value, label = "Effective reproduction number")
 xlabel!("Days after Feb 25")
+
+ontario_data_export.DLRt = abs.(ann(tspan, p_min))[1, :]
+ontario_data_export.DLAccases = data_prediction[2, :]
+A = zeros(150)
+A[1] =4
+A[2:150] = data_prediction[2, 1:end-1]
+ontario_data_export.DLdaily = data_prediction[2, :] -A
+
+CSV.write("ontario_DL_export.csv", ontario_data_export)
