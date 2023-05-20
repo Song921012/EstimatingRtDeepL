@@ -1,21 +1,16 @@
-# loading the Julia packages  needed.
-using DifferentialEquations
-using LinearAlgebra, DiffEqSensitivity, Optim
-using Flux: flatten, params, relu
-using DiffEqFlux, Flux
-using Plots
-using Flux: train!
-using GalacticOptim
-using Optim
-using Turing, Distributions
-using MCMCChains, StatsPlots
-using CSV, DataFrames
-using SymbolicRegression
-using Random
+##
+# Loading Packages and setup random seeds
+using Lux, DiffEqFlux, DifferentialEquations, Optimization, OptimizationOptimJL, Random, Plots
+using DataFrames
+using CSV
+using ComponentArrays
+using OptimizationOptimisers
+rng = Random.default_rng()
 Random.seed!(14);
+
+# Loading Data
 source_data = DataFrame(CSV.File("./DeepLearningEffectiveReproductionNumber/Source_Data/Provincial_Daily_Totals.csv"))
 data_on = source_data[source_data.Province.=="ONTARIO", :]
-data_on
 n = 30
 m = 149
 data_acc = data_on.TotalCases[(n+1):n+m+1]
@@ -24,54 +19,43 @@ display(plot(data_daily, label = "Daily Confirmed Cases", lw = 2))
 display(plot(data_acc, label = "Accumulated Confirmed Cases", lw = 2))
 data_daily[1]
 println(length(data_acc))
-
-# export data
-data_export = data_on[(n+1):n+m+1, [:SummaryDate, :TotalCases]]
-ontario_data_export = DataFrame()
-ontario_data_export.date = data_export.SummaryDate
-ontario_data_export.case = data_daily
-ontario_data_export.Accase = data_acc
-
-
-# Model generation
-ann = FastChain(FastDense(1, 32, tanh), FastDense(32, 1))
-p_0 = initial_params(ann)
-function SIR_nn(du, u, p, t)
-    I, H = u
-    du[1] = 0.1 * min(5, abs(ann(t, p)[1])) * I - 0.1 * I
-    du[2] = 0.1 * min(5, abs(ann(t, p)[1])) * I
-end
-u_0 = Float32[1, data_acc[1]]
-tspan_data = (0.0f0, 149.0f0)
-prob_nn = ODEProblem(SIR_nn, u_0, tspan_data, p_0)
-function train(θ)
-    solvedata = Array(concrete_solve(prob_nn, Vern7(), u_0, θ, saveat = 1,
-        abstol = 1e-6, reltol = 1e-6,
-        sensealg = InterpolatingAdjoint(autojacvec = ReverseDiffVJP())))
-end
+trainingdata=Float32.(data_acc)
+# set up neural differential equation models
 
 
 using BSON: @load
-@load "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_para_irbfgs100.bason" ann_param
+@load "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_nn_ir.bason" ann
+@load "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_para_irlbfgs.bason" psave
+p, st = Lux.setup(rng, ann)
+pinit = ComponentArray(p)
+pfinal = ComponentArray(psave,getaxes(pinit))
+function SIR_nn(du, u, p, t)
+    I, H = u
+    du[1] = 0.1 * min(5, abs(ann([t], p, st)[1][1])) * I - 0.1 * I
+    du[2] = 0.1 * min(5, abs(ann([t], p, st)[1][1])) * I
+end
+u0 = Float32[1, data_acc[1]]
+tspan = (0.0f0, 149.0f0)
+tsteps = range(tspan[1], tspan[2], length=length(data_acc))
+prob_neuralode = ODEProblem(SIR_nn, u0, tspan_data, ComponentArray(p_0))
 
-p_min = ann_param
-tspan_predict = (0.0, 149)
-scatter(data_acc, label = "Real accumulated cases")
-prob_prediction = ODEProblem(SIR_nn, u_0, tspan_data, p_min)
-data_prediction = Array(solve(prob_prediction, Tsit5(), saveat = 1))
-plot!(data_prediction[2, :], label = "Fit accumulated cases")
-xlabel!("Days after Feb 25")
 
-tspan = collect(0:1:149)'
-ann_value = abs.(ann(tspan, p_min))'
-plot(ann_value, label = "Effective reproduction number")
-xlabel!("Days after Feb 25")
+# simulate the neural differential equation models
+function predict_neuralode(θ)
+    #Array(prob_neuralode(u0, p, st)[1])
+    prob = remake(prob_neuralode, p=θ)
+    Array(solve(prob, Tsit5(), saveat=tsteps))
+end
 
-ontario_data_export.DLRt = abs.(ann(tspan, p_min))[1, :]
-ontario_data_export.DLAccases = data_prediction[2, :]
-A = zeros(150)
-A[1] =4
-A[2:150] = data_prediction[2, 1:end-1]
-ontario_data_export.DLdaily = data_prediction[2, :] -A
+predict_neuralode(pfinal)[2, :]
+size(predict_neuralode(pfinal)[2, :]) == size(data_acc)
 
-CSV.write("ontario_DL_export.csv", ontario_data_export)
+
+pred = predict_neuralode(pfinal)[2, :]
+plt = scatter(tsteps, trainingdata, label="Accumulated cases")
+plot!(plt, tsteps, pred, label="Predicted accumulated cases")
+display(plot(plt))
+savefig("./DeepLearningEffectiveReproductionNumber/Saving_Data/annepicase.png")
+
+
+##

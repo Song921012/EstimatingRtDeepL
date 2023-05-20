@@ -2,6 +2,8 @@
 
 Codes for the paper " Estimating time-varying reproduction number by deep learning techniques " submitted to JAAC.
 
+Note: In 2023/05/20, I updated project.toml file to use Julia 1.9
+
 ## Document Descriptions
 
 - Toy Models: logisticgrowth.jl, subexpotential.jl, mediaimpact.jl
@@ -13,20 +15,22 @@ Kalman, EpiNow2 and EpiEstim Methods.
 
 ## Instructions for running the code
 
-### Part One: Estimating time-varing reproduction number by universal differential equations.
+### Part One: Estimating time-varing reproduction number by universal differential equations
 
-Julia Language: 
+Julia Language:
 
-- Step 1: Download Julia and Configuration Julia Environment. 
+- Step 1: Download Julia and Configuration Julia Environment.
 [Download Julia](https://julialang.org/downloads/)
 One can search online for how to configure the julia environment.
 
 - Step 2: Git Clone this repo or download the document.
-- Step 3: cd to the repo folder. 
+- Step 3: cd to the repo folder.
+
 ```
 using Pkg
 Pkg.instantiate(".")
 ```
+
 Then many packages will be downloaded. My project includes many packages one may not use. You can also set up your personal project environments following the guide:
 [Introduction · Pkg.jl](https://pkgdocs.julialang.org/v1/)
 `DifferentialEquations.jl`,`DiffEqFlux.jl`, `Plots` ,`DataFrames.jl`, `CSV.jl` and `Flux.jl` are necessary.
@@ -39,8 +43,6 @@ If one are not familiar with Julia, one can see for more details in Julia Docume
 
 In folder "Rt_Methods_Comparison".
 
-R Language. 
+R Language.
 
 One need to configure the path environments in the codes.
-
-
