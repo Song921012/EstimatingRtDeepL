@@ -97,9 +97,9 @@ callback(pfinal, loss_neuralode(pfinal)...; doplot=true)
 
 # Save neural network architechtures and 
 using BSON: @save
-@save "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_nn_ir.bason" ann
+@save "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_nn_ir.bson" ann
 psave = collect(pfinal)
-@save "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_para_irlbfgs.bason" psave
+@save "./DeepLearningEffectiveReproductionNumber/Saving_Data/ann_para_irlbfgs.bson" psave
 pred = predict_neuralode(pfinal)[2, :]
 plt = scatter(tsteps, trainingdata, label="Accumulated cases")
 plot!(plt, tsteps, pred, label="Predicted accumulated cases")

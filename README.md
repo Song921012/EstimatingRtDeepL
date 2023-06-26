@@ -2,7 +2,12 @@
 
 Codes for the paper " Estimating time-varying reproduction number by deep learning techniques " submitted to JAAC.
 
-Note: In 2023/05/20, I updated project.toml file to use Julia 1.9
+Note: 
+
+- In 2023/05/20, I updated `project.toml` file to use Julia 1.9
+
+- In 2023/06/26, I updated `project.toml` and `logistic.jl`, one can use 
+- In 2023/06/26, I updated `project.toml` and `logistic.jl` as a template and modify other files such as `mediaimpact.jl`.
 
 ## Document Descriptions
 
